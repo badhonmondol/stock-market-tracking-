@@ -23,6 +23,181 @@ import queue
 import requests
 import websocket
 
+# ─────────────────────────────────────────────────────────────────────────────
+# BILINGUAL STRINGS  (ko = Korean, en = English)
+# Toggle at runtime via the 🌐 button — no restart needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_LANG: str = "ko"   # default: Korean
+
+STRINGS: Dict[str, Dict[str, str]] = {
+    # ── top bar ──────────────────────────────────────────────────────────────
+    "symbol_code":          {"ko": "종목코드",         "en": "Symbol"},
+    "stock_name":           {"ko": "종목명",           "en": "Stock Name"},
+    "current_price":        {"ko": "현재가",           "en": "Price"},
+    "volume_lbl":           {"ko": "거래량: --",       "en": "Volume: --"},
+    "start_lbl":            {"ko": "시작",             "en": "Start"},
+    "end_lbl":              {"ko": "종료",             "en": "End"},
+    "btn_start":            {"ko": "START\n자동매매",  "en": "START\nAuto Trade"},
+    "btn_stop":             {"ko": "STOP\n자동매매",   "en": "STOP\nAuto Trade"},
+    # ── chart area ───────────────────────────────────────────────────────────
+    "select_stock":         {"ko": "종목선택",         "en": "Select Stock"},
+    "chart_note":           {"ko": "* 차트 데이터는 실제와 다를 수 있습니다.",
+                             "en": "* Chart data may differ from actual values."},
+    "realtime_tick":        {"ko": "실시간 틱",        "en": "Real-time Tick"},
+    # ── trade history ────────────────────────────────────────────────────────
+    "trade_history":        {"ko": "TRADE HISTORY (오늘)", "en": "TRADE HISTORY (Today)"},
+    "col_time":             {"ko": "시간",             "en": "Time"},
+    "col_type":             {"ko": "구분",             "en": "Type"},
+    "col_price":            {"ko": "가격(KRW)",        "en": "Price(KRW)"},
+    "col_qty":              {"ko": "수량",             "en": "Qty"},
+    "col_reason":           {"ko": "사유",             "en": "Reason"},
+    "col_ticks":            {"ko": "변화(틱)",         "en": "Chg(Ticks)"},
+    "col_high":             {"ko": "고가(KRW)",        "en": "High(KRW)"},
+    "col_pnl":              {"ko": "P/L(KRW)",        "en": "P/L(KRW)"},
+    # ── bottom status bar ────────────────────────────────────────────────────
+    "order_status_ok":      {"ko": "주문상태: 정상",   "en": "Order: Normal"},
+    "position_lbl":         {"ko": "포지션: 0주",      "en": "Position: 0 shs"},
+    "avg_price_lbl":        {"ko": "평균가: --",       "en": "Avg: --"},
+    "cur_price_lbl":        {"ko": "현재가: --",       "en": "Price: --"},
+    # ── statusbar (bottom of window) ─────────────────────────────────────────
+    "not_connected":        {"ko": "● 연결 안됨",      "en": "● Not Connected"},
+    "ws_disconnected":      {"ko": "● WebSocket 끊김", "en": "● WebSocket Off"},
+    # ── right panel ──────────────────────────────────────────────────────────
+    "unrealized_pnl":       {"ko": "미실현손익",       "en": "Unrealized P/L"},
+    "realized_pnl":         {"ko": "실현손익",         "en": "Realized P/L"},
+    "total_pnl":            {"ko": "총손익(오늘)",     "en": "Total P/L(Today)"},
+    "total_trades":         {"ko": "총거래",           "en": "Total Trades"},
+    "win_loss":             {"ko": "익/손",            "en": "Win/Loss"},
+    "win_rate":             {"ko": "승률",             "en": "Win Rate"},
+    "idle_status":          {"ko": "대기 중",          "en": "Idle"},
+    "basic_stop_lbl":       {"ko": "기본 손절",        "en": "Basic Stop"},
+    "trailing_lbl":         {"ko": "추격 익절 (상승 후)", "en": "Trailing TP"},
+    "stagnation_sell_lbl":  {"ko": "정체 매도",        "en": "Stagnation Exit"},
+    "order_qty_lbl":        {"ko": "주문 수량",        "en": "Order Qty"},
+    "shares_unit":          {"ko": "주",               "en": "shs"},
+    "avail_lbl":            {"ko": "가용: 100주",      "en": "Avail: 100 shs"},
+    "pos_box":              {"ko": "현재 포지션",      "en": "Current Position"},
+    "pos_qty":              {"ko": "보유 수량",        "en": "Holding Qty"},
+    "pos_avg":              {"ko": "평균 매수가",      "en": "Avg Buy Price"},
+    "pos_high":             {"ko": "매수 후 최고가",   "en": "High After Buy"},
+    "pos_trigger":          {"ko": "현재 매도 기준",   "en": "Sell Trigger"},
+    "emergency_btn":        {"ko": "⛔ EMERGENCY STOP\n(전체 주문 취소)",
+                             "en": "⛔ EMERGENCY STOP\n(Cancel All Orders)"},
+    "btn_export":           {"ko": "💾 거래내역 저장", "en": "💾 Export Trades"},
+    "btn_exit":             {"ko": "❌ 종료",          "en": "❌ Exit"},
+    # ── settings dialog ──────────────────────────────────────────────────────
+    "settings_title":       {"ko": "설정",             "en": "Settings"},
+    "tab_api":              {"ko": "API 설정",         "en": "API Settings"},
+    "tab_buy":              {"ko": "매수 조건",        "en": "Buy Conditions"},
+    "tab_sell":             {"ko": "매도 조건",        "en": "Sell Conditions"},
+    "tab_risk":             {"ko": "리스크 관리",      "en": "Risk Management"},
+    "tab_time":             {"ko": "시간 설정",        "en": "Time Settings"},
+    "env_lbl":              {"ko": "환경:",            "en": "Environment:"},
+    "paper_check":          {"ko": "모의 투자 (Paper Trading)", "en": "Paper Trading"},
+    "account_no":           {"ko": "계좌번호:",        "en": "Account No:"},
+    "account_sfx":          {"ko": "계좌 상품코드:",   "en": "Account Suffix:"},
+    "buy_cond1":            {"ko": "매수조건 1 - 20MA 눌림", "en": "Buy Cond 1 – 20MA Pullback"},
+    "buy_cond2":            {"ko": "매수조건 2 - 급등",     "en": "Buy Cond 2 – Rapid Rise"},
+    "buy_cond3":            {"ko": "매수조건 3 - 급락 후 반등", "en": "Buy Cond 3 – Rebound After Drop"},
+    "enable":               {"ko": "활성화:",          "en": "Enable:"},
+    "proximity_ticks":      {"ko": "근접 틱:",         "en": "Proximity Ticks:"},
+    "recovery_ticks":       {"ko": "회복 틱:",         "en": "Recovery Ticks:"},
+    "rise_ticks":           {"ko": "상승 틱:",         "en": "Rise Ticks:"},
+    "drop_ticks":           {"ko": "하락 틱:",         "en": "Drop Ticks:"},
+    "rebound_ticks":        {"ko": "반등 틱:",         "en": "Rebound Ticks:"},
+    "seconds":              {"ko": "초:",              "en": "Seconds:"},
+    "basic_stop_box":       {"ko": "기본 손절",        "en": "Basic Stop-Loss"},
+    "stop_ticks":           {"ko": "손절 틱:",         "en": "Stop Ticks:"},
+    "stag_sell_box":        {"ko": "정체 매도",        "en": "Stagnation Exit"},
+    "stag_secs":            {"ko": "정체 초:",         "en": "Stagnation Secs:"},
+    "max_daily_loss":       {"ko": "최대 일일 손실 (KRW):", "en": "Max Daily Loss (KRW):"},
+    "max_trades":           {"ko": "최대 일일 거래 횟수:", "en": "Max Trades/Day:"},
+    "order_qty_form":       {"ko": "주문 수량:",       "en": "Order Qty:"},
+    "reentry_wait":         {"ko": "재진입 대기 (초):", "en": "Re-entry Wait (s):"},
+    "trade_start":          {"ko": "매매 시작:",       "en": "Trade Start:"},
+    "trade_end":            {"ko": "매매 종료:",       "en": "Trade End:"},
+    "block_first":          {"ko": "장 시작 후 매수 차단 (분):", "en": "Block Buy First (min):"},
+    "stag_buy_cancel":      {"ko": "매수 정체 취소 (초):", "en": "Buy Stagnation Cancel (s):"},
+    "stag_reentry":         {"ko": "정체 후 재진입 대기 (초):", "en": "Re-entry After Stagnation (s):"},
+    # ── dialogs / messages ───────────────────────────────────────────────────
+    "warning":              {"ko": "경고",             "en": "Warning"},
+    "error_title":          {"ko": "오류",             "en": "Error"},
+    "enter_api_first":      {"ko": "먼저 설정에서 API 정보를 입력하세요.",
+                             "en": "Please enter API credentials in Settings first."},
+    "enter_api_warn":       {"ko": "설정에서 API 정보를 입력하세요.",
+                             "en": "Enter API credentials in Settings."},
+    "select_stock_warn":    {"ko": "종목을 먼저 선택하세요.",
+                             "en": "Please select a stock first."},
+    "stock_not_found":      {"ko": "종목을 찾을 수 없습니다: ",
+                             "en": "Stock not found: "},
+    "start_confirm_title":  {"ko": "자동매매 시작",    "en": "Start Auto-Trading"},
+    "start_confirm_msg":    {"ko": "자동매매를 시작하시겠습니까?\n환경: {mode}\n종목: {stock}",
+                             "en": "Start auto-trading?\nMode: {mode}\nStock: {stock}"},
+    "paper_mode":           {"ko": "모의투자",         "en": "Paper"},
+    "live_mode":            {"ko": "실거래",           "en": "Live"},
+    "stop_confirm_title":   {"ko": "자동매매 중지",    "en": "Stop Auto-Trading"},
+    "stop_confirm_msg":     {"ko": "자동매매를 중지하시겠습니까?",
+                             "en": "Stop auto-trading?"},
+    "emergency_title":      {"ko": "⛔ 긴급 정지",    "en": "⛔ Emergency Stop"},
+    "emergency_msg":        {"ko": "긴급 정지를 실행하시겠습니까?\n\n모든 주문이 취소됩니다.",
+                             "en": "Execute emergency stop?\n\nAll orders will be cancelled."},
+    "liquidate_title":      {"ko": "포지션 처리",      "en": "Position Handling"},
+    "liquidate_msg":        {"ko": "현재 보유 포지션을 청산하시겠습니까?",
+                             "en": "Liquidate current position?"},
+    "log_title":            {"ko": "시스템 로그",      "en": "System Log"},
+    "log_no_file":          {"ko": "로그 파일 없음",   "en": "No log file found"},
+    "export_title":         {"ko": "거래내역 저장",    "en": "Export Trades"},
+    "export_done_title":    {"ko": "완료",             "en": "Done"},
+    "export_done_msg":      {"ko": "저장 완료:\n",     "en": "Saved to:\n"},
+    "exit_title":           {"ko": "종료",             "en": "Exit"},
+    "exit_msg":             {"ko": "프로그램을 종료하시겠습니까?",
+                             "en": "Exit the program?"},
+    # ── log messages (engine) ────────────────────────────────────────────────
+    "log_init":             {"ko": "시스템 초기화 완료. 설정에서 API 정보를 입력하세요.",
+                             "en": "System ready. Enter API credentials in Settings."},
+    "log_settings_saved":   {"ko": "설정 저장됨",      "en": "Settings saved"},
+    "log_ws_connected":     {"ko": "연결",             "en": "connected"},
+    "log_ws_disconnected":  {"ko": "끊김",             "en": "disconnected"},
+    "log_stock_selected":   {"ko": "종목 선택: {name} ({sym}) @ {price:,}원",
+                             "en": "Stock selected: {name} ({sym}) @ {price:,} KRW"},
+    "log_auth_fail":        {"ko": "❌ API 인증 실패", "en": "❌ API auth failed"},
+    "log_stock_fail":       {"ko": "❌ 종목 조회 실패: ", "en": "❌ Stock lookup failed: "},
+    "log_start":            {"ko": "✅ 자동매매 시작 [{mode}]",
+                             "en": "✅ Auto-trading started [{mode}]"},
+    "log_stop":             {"ko": "⏹ 자동매매 중지", "en": "⏹ Auto-trading stopped"},
+    "log_emergency":        {"ko": "⛔ 긴급 정지 실행 (청산={v})",
+                             "en": "⛔ Emergency stop (liquidate={v})"},
+    "log_export":           {"ko": "거래내역 저장: ",  "en": "Trades exported: "},
+    "log_conn_warn":        {"ko": "⚠ 연결 상태 이상 감지 - 자동매매 일시 중단",
+                             "en": "⚠ Connection issue detected – auto-trading paused"},
+    "log_error_prefix":     {"ko": "⚠ 오류: ",        "en": "⚠ Error: "},
+    "ws_connected_lbl":     {"ko": "● WebSocket 연결됨", "en": "● WebSocket On"},
+    "kis_connected_lbl":    {"ko": "● KIS 연결됨",    "en": "● KIS Connected"},
+    "order_lbl":            {"ko": "주문: ",           "en": "Order: "},
+    "cur_price_fmt":        {"ko": "현재가: {p:,}",    "en": "Price: {p:,}"},
+    "position_fmt":         {"ko": "포지션: {q}주",    "en": "Position: {q} shs"},
+    "avg_fmt":              {"ko": "평균가: {p:,}",    "en": "Avg: {p:,}"},
+    "avg_none":             {"ko": "평균가: --",       "en": "Avg: --"},
+    "pos_qty_fmt":          {"ko": "{q}주",            "en": "{q} shs"},
+    "pos_avg_fmt":          {"ko": "{p:,}원",          "en": "{p:,} KRW"},
+    "trade_buy":            {"ko": "▲ 매수",           "en": "▲ Buy"},
+    "trade_sell":           {"ko": "▼ 매도",           "en": "▼ Sell"},
+    "yes":                  {"ko": "예",               "en": "Yes"},
+    "no":                   {"ko": "아니오",           "en": "No"},
+}
+
+
+def tr(key: str, **kwargs) -> str:
+    """Return translated string for current language, with optional format args."""
+    text = STRINGS.get(key, {}).get(_LANG, STRINGS.get(key, {}).get("ko", key))
+    if kwargs:
+        try:
+            text = text.format(**kwargs)
+        except (KeyError, ValueError):
+            pass
+    return text
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QGridLayout, QLabel, QPushButton, QLineEdit, QComboBox, QSpinBox,
@@ -818,6 +993,7 @@ class WebSocketManager(QObject):
     @property
     def is_connected(self) -> bool:
         return (self._ws is not None and
+                self._running and
                 (time.time() - self._last_heartbeat) < 60)
 
 
@@ -1012,6 +1188,7 @@ class TradingEngine(QObject):
         self._pending_order_qty: int = 0
         self._order_submit_time: Optional[float] = None
         self._cancel_in_progress = False
+        self._sell_reason: SellReason = SellReason.BASIC_STOP  # always initialized
 
         # Session stats
         self.session_realized_pnl = 0
@@ -1053,7 +1230,7 @@ class TradingEngine(QObject):
     def start_trading(self):
         with QMutexLocker(self._mutex):
             if not self._symbol:
-                self.error_occurred.emit("종목을 먼저 선택하세요")
+                self.error_occurred.emit(tr("select_stock_warn"))
                 return
             self._auto_trading = True
             self._running = True
@@ -1061,7 +1238,7 @@ class TradingEngine(QObject):
             self._ord_state = OrderState.IDLE
         self._engine_timer.start()
         self._emit_status()
-        self.log_message.emit(f"자동매매 시작: {self._symbol}")
+        self.log_message.emit(f"Auto-trading started: {self._symbol}")
 
     def stop_trading(self, reconcile: bool = True):
         self._auto_trading = False
@@ -1072,13 +1249,13 @@ class TradingEngine(QObject):
         self._emit_status()
         if reconcile:
             self._reconcile_with_broker()
-        self.log_message.emit("자동매매 중지")
+        self.log_message.emit("Auto-trading stopped")
 
     def emergency_stop(self, liquidate: bool = True):
         """Emergency stop - cancel all orders, optionally liquidate."""
         self._auto_trading = False
         self._engine_timer.stop()
-        self.log_message.emit("⚠ 긴급 정지 실행")
+        self.log_message.emit("⚠ Emergency stop executed")
         self.db.log_event("EMERGENCY_STOP", f"liquidate={liquidate}")
 
         # Cancel pending orders
@@ -1093,9 +1270,9 @@ class TradingEngine(QObject):
                 order_type="MARKET"
             )
             if result.get("success"):
-                self.log_message.emit(f"긴급 청산 주문: {self.position.qty}주")
+                self.log_message.emit(f"Emergency liquidation order: {self.position.qty} shs")
             else:
-                self.log_message.emit(f"긴급 청산 실패: {result.get('error')}")
+                self.log_message.emit(f"Emergency liquidation failed: {result.get('error')}")
 
         with QMutexLocker(self._mutex):
             self._sig_state = SignalState.PAUSED
@@ -1180,11 +1357,11 @@ class TradingEngine(QObject):
         session_limit = self.config.get("session_loss_limit", 300000)
 
         if -self.session_realized_pnl >= max_loss:
-            self.log_message.emit("최대 일일 손실 한도 도달 - 매매 중지")
+            self.log_message.emit("Max daily loss limit reached – trading stopped")
             self.stop_trading(reconcile=False)
             return True
         if self.session_trades >= max_trades:
-            self.log_message.emit("최대 거래 횟수 도달 - 매매 중지")
+            self.log_message.emit("Max trade count reached – trading stopped")
             self.stop_trading(reconcile=False)
             return True
         return False
@@ -1235,7 +1412,7 @@ class TradingEngine(QObject):
         if elapsed_no_move >= stag_secs and self._sig_state == SignalState.SETUP_FORMING:
             self._sig_state = SignalState.STAGNATION_CANCELLED
             self._stagnation_cancelled_time = time.time()
-            self.log_message.emit("매수 셋업 취소: 가격 정체")
+            self.log_message.emit("Buy setup cancelled: price stagnation")
             return None
 
         # Condition 1: 20MA Pullback
@@ -1391,7 +1568,7 @@ class TradingEngine(QObject):
             # Timeout - must verify
             self._ord_state = OrderState.RECONCILING
             self._emit_status()
-            self.log_message.emit("매수 주문 타임아웃 - 주문 확인 중")
+            self.log_message.emit("Buy order timeout – checking order status")
             return
 
         if result.get("success"):
@@ -1399,13 +1576,13 @@ class TradingEngine(QObject):
             self._pending_order_side = "BUY"
             self._pending_order_qty = qty
             self._order_submit_time = time.time()
-            self.log_message.emit(f"매수 주문: {qty}주 @ {price:,}원 ({reason.value})")
+            self.log_message.emit(f"Buy order: {qty} shs @ {price:,} KRW ({reason.value})")
             self.db.save_order(self._symbol, "BUY", self._pending_order_id,
                                qty, 0, limit_price, "PENDING", reason.value)
         else:
             self._ord_state = OrderState.IDLE
             self._sig_state = SignalState.WATCHING
-            self.log_message.emit(f"매수 주문 실패: {result.get('error')}")
+            self.log_message.emit(f"Buy order failed: {result.get('error')}")
             self._emit_status()
 
     def _handle_buy_pending(self, price: int):
@@ -1435,7 +1612,7 @@ class TradingEngine(QObject):
             self._ord_state = OrderState.HOLDING
             self._sig_state = SignalState.WATCHING
             self.log_message.emit(
-                f"매수 체결: {filled}주 @ {avg_price:,}원 (평균)")
+                f"Buy filled: {filled} shs @ avg {avg_price:,} KRW")
             self._pending_order_id = None
             self._emit_status()
 
@@ -1456,7 +1633,7 @@ class TradingEngine(QObject):
         result = self.api.cancel_order(
             self._pending_order_id, self._symbol, self._pending_order_qty)
         self.log_message.emit(
-            f"주문 취소 {'성공' if result.get('success') else '실패'}: "
+            f"Order cancel {'OK' if result.get('success') else 'FAILED'}: "
             f"{self._pending_order_id}")
 
     def _handle_cancel_pending(self):
@@ -1480,7 +1657,7 @@ class TradingEngine(QObject):
                 self.position.buy_time = datetime.now()
                 self.position.high_after_buy = self.position.avg_price
                 self._ord_state = OrderState.HOLDING
-                self.log_message.emit(f"부분 체결 후 취소: {filled}주")
+                self.log_message.emit(f"Partial fill then cancelled: {filled} shs")
             else:
                 self._ord_state = OrderState.IDLE
                 self._sig_state = SignalState.WATCHING
@@ -1559,14 +1736,14 @@ class TradingEngine(QObject):
             self._pending_order_side = "SELL"
             self._pending_order_qty = qty
             self._order_submit_time = time.time()
-            self.log_message.emit(f"매도 주문: {qty}주 @ {price:,}원 ({reason.value})")
+            self.log_message.emit(f"Sell order: {qty} shs @ {price:,} KRW ({reason.value})")
             self.db.save_order(self._symbol, "SELL", self._pending_order_id,
                                qty, 0, limit_price, "PENDING", reason.value)
             # Store sell reason for trade record
             self._sell_reason = reason
         else:
             self._ord_state = OrderState.HOLDING
-            self.log_message.emit(f"매도 주문 실패: {result.get('error')}")
+            self.log_message.emit(f"Sell order failed: {result.get('error')}")
             self._emit_status()
 
     def _handle_sell_pending(self, price: int):
@@ -1596,7 +1773,7 @@ class TradingEngine(QObject):
                 datetime.now().isoformat(),
                 self.position.avg_price, sell_price, filled,
                 self.position.buy_reason,
-                getattr(self, "_sell_reason", SellReason.BASIC_STOP).value,
+                self._sell_reason.value,
                 self.position.high_after_buy, pnl
             )
 
@@ -1612,14 +1789,14 @@ class TradingEngine(QObject):
                 "type": "Sell",
                 "price": sell_price,
                 "qty": filled,
-                "reason": getattr(self, "_sell_reason", SellReason.BASIC_STOP).value,
+                "reason": self._sell_reason.value,
                 "high": self.position.high_after_buy,
                 "pnl": pnl,
                 "ticks": price_to_ticks(sell_price, self.position.avg_price),
             }
 
             self.log_message.emit(
-                f"매도 체결: {filled}주 @ {sell_price:,}원 | P&L: {pnl:+,}원")
+                f"Sell filled: {filled} shs @ {sell_price:,} KRW | P&L: {pnl:+,} KRW")
             self.trade_completed.emit(trade_info)
 
             # Reset position
@@ -1635,15 +1812,16 @@ class TradingEngine(QObject):
 
         elif filled > 0 and remaining > 0:
             self._ord_state = OrderState.SELL_PARTIAL
-            # Update position qty to reflect partial sell
-            self.position.qty = self.position.qty - filled
+            # Broker returns cumulative filled; set remaining qty directly
+            # to avoid double-subtraction across repeated poll cycles
+            self.position.qty = remaining
 
         elif elapsed >= timeout and remaining > 0:
             self._cancel_pending_order()
 
     def _handle_reconciling(self):
         """Reconcile state with broker after timeout/restart."""
-        self.log_message.emit("브로커 계좌 상태 조회 중...")
+        self.log_message.emit("Querying broker account status...")
         balance = self.api.get_account_balance()
         holdings = balance.get("holdings", {})
 
@@ -1662,7 +1840,7 @@ class TradingEngine(QObject):
 
         self._pending_order_id = None
         self._cancel_in_progress = False
-        self.log_message.emit("계좌 상태 조회 완료")
+        self.log_message.emit("Account status confirmed")
         self._emit_status()
 
     def _reconcile_with_broker(self):
@@ -1738,7 +1916,7 @@ class SettingsDialog(QDialog):
     def __init__(self, config: ConfigManager, parent=None):
         super().__init__(parent)
         self.config = config
-        self.setWindowTitle("설정")
+        self.setWindowTitle(tr("settings_title"))
         self.setMinimumWidth(500)
         self.setStyleSheet(DARK_STYLE)
         self._build_ui()
@@ -1747,11 +1925,11 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(self)
         tabs = QTabWidget()
 
-        tabs.addTab(self._api_tab(), "API 설정")
-        tabs.addTab(self._buy_tab(), "매수 조건")
-        tabs.addTab(self._sell_tab(), "매도 조건")
-        tabs.addTab(self._risk_tab(), "리스크 관리")
-        tabs.addTab(self._time_tab(), "시간 설정")
+        tabs.addTab(self._api_tab(), tr("tab_api"))
+        tabs.addTab(self._buy_tab(), tr("tab_buy"))
+        tabs.addTab(self._sell_tab(), tr("tab_sell"))
+        tabs.addTab(self._risk_tab(), tr("tab_risk"))
+        tabs.addTab(self._time_tab(), tr("tab_time"))
 
         layout.addWidget(tabs)
 
@@ -1775,9 +1953,9 @@ class SettingsDialog(QDialog):
         layout = QFormLayout(w)
         self._widgets = {}
 
-        self._paper_check = QCheckBox("모의 투자 (Paper Trading)")
+        self._paper_check = QCheckBox(tr("paper_check"))
         self._paper_check.setChecked(self.config.get("is_paper", True))
-        layout.addRow("환경:", self._paper_check)
+        layout.addRow(tr("env_lbl"), self._paper_check)
 
         self._app_key = QLineEdit(self.config.get("app_key", ""))
         layout.addRow("App Key:", self._app_key)
@@ -1787,10 +1965,10 @@ class SettingsDialog(QDialog):
         layout.addRow("App Secret:", self._app_secret)
 
         self._account = QLineEdit(self.config.get("account_no", ""))
-        layout.addRow("계좌번호:", self._account)
+        layout.addRow(tr("account_no"), self._account)
 
         self._suffix = QLineEdit(self.config.get("account_suffix", "01"))
-        layout.addRow("계좌 상품코드:", self._suffix)
+        layout.addRow(tr("account_sfx"), self._suffix)
 
         return w
 
@@ -1798,7 +1976,7 @@ class SettingsDialog(QDialog):
         w = QWidget()
         layout = QVBoxLayout(w)
 
-        g1 = QGroupBox("매수조건 1 - 20MA 눌림")
+        g1 = QGroupBox(tr("buy_cond1"))
         f1 = QFormLayout(g1)
         self._ma20_en = QCheckBox()
         self._ma20_en.setChecked(self.config.get("ma20_enabled", True))
@@ -1806,12 +1984,12 @@ class SettingsDialog(QDialog):
         self._ma20_prox.setValue(self.config.get("ma20_proximity_ticks", 3))
         self._ma20_rec = QSpinBox(); self._ma20_rec.setRange(1, 20)
         self._ma20_rec.setValue(self.config.get("ma20_recovery_ticks", 2))
-        f1.addRow("활성화:", self._ma20_en)
-        f1.addRow("근접 틱:", self._ma20_prox)
-        f1.addRow("회복 틱:", self._ma20_rec)
+        f1.addRow(tr("enable"), self._ma20_en)
+        f1.addRow(tr("proximity_ticks"), self._ma20_prox)
+        f1.addRow(tr("recovery_ticks"), self._ma20_rec)
         layout.addWidget(g1)
 
-        g2 = QGroupBox("매수조건 2 - 급등")
+        g2 = QGroupBox(tr("buy_cond2"))
         f2 = QFormLayout(g2)
         self._rr_en = QCheckBox()
         self._rr_en.setChecked(self.config.get("rapid_rise_enabled", True))
@@ -1819,12 +1997,12 @@ class SettingsDialog(QDialog):
         self._rr_ticks.setValue(self.config.get("rapid_rise_ticks", 5))
         self._rr_secs = QSpinBox(); self._rr_secs.setRange(1, 60)
         self._rr_secs.setValue(self.config.get("rapid_rise_seconds", 5))
-        f2.addRow("활성화:", self._rr_en)
-        f2.addRow("상승 틱:", self._rr_ticks)
-        f2.addRow("초:", self._rr_secs)
+        f2.addRow(tr("enable"), self._rr_en)
+        f2.addRow(tr("rise_ticks"), self._rr_ticks)
+        f2.addRow(tr("seconds"), self._rr_secs)
         layout.addWidget(g2)
 
-        g3 = QGroupBox("매수조건 3 - 급락 후 반등")
+        g3 = QGroupBox(tr("buy_cond3"))
         f3 = QFormLayout(g3)
         self._reb_en = QCheckBox()
         self._reb_en.setChecked(self.config.get("rebound_enabled", True))
@@ -1834,10 +2012,10 @@ class SettingsDialog(QDialog):
         self._reb_up.setValue(self.config.get("rebound_up_ticks", 4))
         self._reb_secs = QSpinBox(); self._reb_secs.setRange(1, 30)
         self._reb_secs.setValue(self.config.get("rebound_seconds", 5))
-        f3.addRow("활성화:", self._reb_en)
-        f3.addRow("하락 틱:", self._reb_drop)
-        f3.addRow("반등 틱:", self._reb_up)
-        f3.addRow("초:", self._reb_secs)
+        f3.addRow(tr("enable"), self._reb_en)
+        f3.addRow(tr("drop_ticks"), self._reb_drop)
+        f3.addRow(tr("rebound_ticks"), self._reb_up)
+        f3.addRow(tr("seconds"), self._reb_secs)
         layout.addWidget(g3)
 
         layout.addStretch()
@@ -1847,24 +2025,24 @@ class SettingsDialog(QDialog):
         w = QWidget()
         layout = QVBoxLayout(w)
 
-        g1 = QGroupBox("기본 손절")
+        g1 = QGroupBox(tr("basic_stop_box"))
         f1 = QFormLayout(g1)
         self._bs_en = QCheckBox()
         self._bs_en.setChecked(self.config.get("basic_sell_enabled", True))
         self._bs_ticks = QSpinBox(); self._bs_ticks.setRange(-50, 0)
         self._bs_ticks.setValue(self.config.get("basic_sell_ticks", -2))
-        f1.addRow("활성화:", self._bs_en)
-        f1.addRow("손절 틱:", self._bs_ticks)
+        f1.addRow(tr("enable"), self._bs_en)
+        f1.addRow(tr("stop_ticks"), self._bs_ticks)
         layout.addWidget(g1)
 
-        g2 = QGroupBox("정체 매도")
+        g2 = QGroupBox(tr("stag_sell_box"))
         f2 = QFormLayout(g2)
         self._ss_en = QCheckBox()
         self._ss_en.setChecked(self.config.get("stagnation_sell_enabled", True))
         self._ss_secs = QSpinBox(); self._ss_secs.setRange(1, 30)
         self._ss_secs.setValue(self.config.get("stagnation_sell_seconds", 2))
-        f2.addRow("활성화:", self._ss_en)
-        f2.addRow("정체 초:", self._ss_secs)
+        f2.addRow(tr("enable"), self._ss_en)
+        f2.addRow(tr("stag_secs"), self._ss_secs)
         layout.addWidget(g2)
 
         layout.addStretch()
@@ -1877,22 +2055,22 @@ class SettingsDialog(QDialog):
         self._max_loss.setRange(0, 10000000)
         self._max_loss.setValue(self.config.get("max_daily_loss", 500000))
         self._max_loss.setSingleStep(10000)
-        f.addRow("최대 일일 손실 (KRW):", self._max_loss)
+        f.addRow(tr("max_daily_loss"), self._max_loss)
 
         self._max_trades = QSpinBox()
         self._max_trades.setRange(1, 1000)
         self._max_trades.setValue(self.config.get("max_trades_per_day", 50))
-        f.addRow("최대 일일 거래 횟수:", self._max_trades)
+        f.addRow(tr("max_trades"), self._max_trades)
 
         self._order_qty = QSpinBox()
         self._order_qty.setRange(1, 10000)
         self._order_qty.setValue(self.config.get("order_qty", 10))
-        f.addRow("주문 수량:", self._order_qty)
+        f.addRow(tr("order_qty_form"), self._order_qty)
 
         self._reentry_wait = QSpinBox()
         self._reentry_wait.setRange(0, 3600)
         self._reentry_wait.setValue(self.config.get("reentry_wait_seconds", 3))
-        f.addRow("재진입 대기 (초):", self._reentry_wait)
+        f.addRow(tr("reentry_wait"), self._reentry_wait)
 
         return w
 
@@ -1901,25 +2079,25 @@ class SettingsDialog(QDialog):
         f = QFormLayout(w)
 
         self._start_time = QLineEdit(self.config.get("start_time", "09:00:00"))
-        f.addRow("매매 시작:", self._start_time)
+        f.addRow(tr("trade_start"), self._start_time)
 
         self._end_time = QLineEdit(self.config.get("end_time", "15:30:00"))
-        f.addRow("매매 종료:", self._end_time)
+        f.addRow(tr("trade_end"), self._end_time)
 
         self._block_first = QSpinBox()
         self._block_first.setRange(0, 60)
         self._block_first.setValue(self.config.get("block_buy_first_minutes", 0))
-        f.addRow("장 시작 후 매수 차단 (분):", self._block_first)
+        f.addRow(tr("block_first"), self._block_first)
 
         self._stag_buy_secs = QSpinBox()
         self._stag_buy_secs.setRange(1, 30)
         self._stag_buy_secs.setValue(self.config.get("stagnation_buy_seconds", 2))
-        f.addRow("매수 정체 취소 (초):", self._stag_buy_secs)
+        f.addRow(tr("stag_buy_cancel"), self._stag_buy_secs)
 
         self._stag_reentry = QSpinBox()
         self._stag_reentry.setRange(5, 300)
         self._stag_reentry.setValue(self.config.get("stagnation_reentry_seconds", 60))
-        f.addRow("정체 후 재진입 대기 (초):", self._stag_reentry)
+        f.addRow(tr("stag_reentry"), self._stag_reentry)
 
         return w
 
@@ -1973,10 +2151,8 @@ class CandleChartWidget(QChartView):
         self._chart.setBackgroundBrush(QBrush(QColor("#1a1a2e")))
         self._chart.setTheme(QChart.ChartTheme.ChartThemeDark)
         self._chart.legend().hide()
-        self._chart.setMargins(type('M', (), {'left': lambda: 0,
-                                               'right': lambda: 0,
-                                               'top': lambda: 0,
-                                               'bottom': lambda: 0})())
+        from PySide6.QtCore import QMargins
+        self._chart.setMargins(QMargins(0, 0, 0, 0))
 
         self._candle_series = QCandlestickSeries()
         self._candle_series.setIncreasingColor(QColor("#e74c3c"))
@@ -1996,7 +2172,8 @@ class CandleChartWidget(QChartView):
         self._chart.addSeries(self._candle_series)
         self._chart.addSeries(self._ma_series)
 
-        self._chart.createDefaultAxes()
+        # Axes created on first data update to avoid mismatched-axis crash
+        self._axes_created = False
         self.setChart(self._chart)
         self.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.setStyleSheet("background: #1a1a2e; border: none;")
@@ -2009,18 +2186,21 @@ class CandleChartWidget(QChartView):
         self._candle_series.clear()
         self._ma_series.clear()
 
-        for i, c in enumerate(candles[-60:]):  # show last 60 candles
+        for c in candles[-60:]:  # show last 60 candles
             ts_ms = int(c.ts.timestamp() * 1000)
             cs = QCandlestickSet(c.open, c.high, c.low, c.close, ts_ms)
             self._candle_series.append(cs)
 
         # MA line
-        for i, (c, ma) in enumerate(zip(candles[-60:], ma20_values[-60:])):
+        for c, ma in zip(candles[-60:], ma20_values[-60:]):
             if ma > 0:
                 ts_ms = int(c.ts.timestamp() * 1000)
                 self._ma_series.append(ts_ms, ma)
 
-        self._chart.axes(Qt.Orientation.Horizontal, self._candle_series)
+        # Create axes once after series have data
+        if not self._axes_created and self._candle_series.count() > 0:
+            self._chart.createDefaultAxes()
+            self._axes_created = True
 
     def add_trade_marker(self, price: int, is_buy: bool, ts: datetime):
         self._markers.append({"price": price, "is_buy": is_buy, "ts": ts})
@@ -2271,7 +2451,7 @@ class MainWindow(QMainWindow):
         self._conn_timer.start(5000)
 
         self._update_clock()
-        self._log("시스템 초기화 완료. 설정에서 API 정보를 입력하세요.")
+        self._log(tr("log_init"))
 
     # ── UI BUILD ──────────────────────────────────────────────────────────────
 
@@ -2304,11 +2484,11 @@ class MainWindow(QMainWindow):
         # System status bar
         self.statusBar().setStyleSheet(
             "QStatusBar { background: #0a0a18; color: #666688; }")
-        self._status_conn = QLabel("● 연결 안됨")
+        self._status_conn = QLabel(tr("not_connected"))
         self._status_conn.setStyleSheet("color: #cc4444;")
-        self._status_ws = QLabel("● WebSocket 끊김")
+        self._status_ws = QLabel(tr("ws_disconnected"))
         self._status_ws.setStyleSheet("color: #cc4444;")
-        self._status_order = QLabel("주문: 정상")
+        self._status_order = QLabel(tr("order_status_ok"))
         self._status_time = QLabel("")
         self.statusBar().addWidget(self._status_conn)
         self.statusBar().addWidget(QLabel("  "))
@@ -2319,73 +2499,87 @@ class MainWindow(QMainWindow):
 
     def _build_top_bar(self) -> QWidget:
         w = QWidget()
-        w.setFixedHeight(52)
+        w.setFixedHeight(58)
         w.setStyleSheet("background: #0a0a18; border-bottom: 1px solid #2a2a4a;")
         layout = QHBoxLayout(w)
         layout.setContentsMargins(8, 4, 8, 4)
+        layout.setSpacing(6)
 
-        # Symbol search
-        layout.addWidget(QLabel("종목코드"))
+        # ── Symbol search ──────────────────────────────────────────────────
+        layout.addWidget(QLabel(tr("symbol_code")))
         self._sym_input = QLineEdit()
-        self._sym_input.setFixedWidth(90)
+        self._sym_input.setFixedWidth(80)
         self._sym_input.setPlaceholderText("005930")
         self._sym_input.returnPressed.connect(self._search_stock)
         layout.addWidget(self._sym_input)
         btn_search = QPushButton("🔍")
-        btn_search.setFixedWidth(36)
+        btn_search.setFixedSize(30, 30)
         btn_search.clicked.connect(self._search_stock)
         layout.addWidget(btn_search)
 
-        self._stock_name_lbl = QLabel("종목명")
-        self._stock_name_lbl.setStyleSheet("color: #a0a0cc; font-size: 14px;")
+        self._stock_name_lbl = QLabel(tr("stock_name"))
+        self._stock_name_lbl.setStyleSheet(
+            "color:#a0a0cc; font-size:13px; font-weight:bold;")
+        self._stock_name_lbl.setMinimumWidth(80)
         layout.addWidget(self._stock_name_lbl)
 
-        layout.addSpacing(16)
-
-        # Price display
-        lbl = QLabel("현재가")
-        lbl.setStyleSheet("color: #888888;")
+        # ── Price ──────────────────────────────────────────────────────────
+        layout.addSpacing(8)
+        lbl = QLabel(tr("current_price"))
+        lbl.setStyleSheet("color:#888888; font-size:11px;")
         layout.addWidget(lbl)
+
         self._price_lbl = QLabel("--")
         self._price_lbl.setObjectName("price_label")
+        self._price_lbl.setMinimumWidth(70)
         layout.addWidget(self._price_lbl)
 
         self._price_change_lbl = QLabel("")
-        self._price_change_lbl.setStyleSheet("color: #e74c3c; font-size: 13px;")
+        self._price_change_lbl.setStyleSheet("color:#e74c3c; font-size:12px;")
+        self._price_change_lbl.setMinimumWidth(90)
         layout.addWidget(self._price_change_lbl)
+
+        # ── Volume ─────────────────────────────────────────────────────────
+        self._vol_lbl = QLabel(tr("volume_lbl"))
+        self._vol_lbl.setStyleSheet("color:#888888; font-size:11px;")
+        layout.addWidget(self._vol_lbl)
 
         layout.addStretch()
 
-        # Volume / Turnover
-        self._vol_lbl = QLabel("거래량: --")
-        self._vol_lbl.setStyleSheet("color: #888888;")
-        layout.addWidget(self._vol_lbl)
-        layout.addSpacing(16)
-
-        # Time settings inline
-        layout.addWidget(QLabel("시작"))
+        # ── Time settings ──────────────────────────────────────────────────
+        layout.addWidget(QLabel(tr("start_lbl")))
         self._start_time_edit = QLineEdit(self.config.get("start_time", "09:00:00"))
-        self._start_time_edit.setFixedWidth(70)
+        self._start_time_edit.setFixedWidth(68)
         layout.addWidget(self._start_time_edit)
-        layout.addWidget(QLabel("종료"))
+        layout.addWidget(QLabel(tr("end_lbl")))
         self._end_time_edit = QLineEdit(self.config.get("end_time", "15:30:00"))
-        self._end_time_edit.setFixedWidth(70)
+        self._end_time_edit.setFixedWidth(68)
         layout.addWidget(self._end_time_edit)
 
-        layout.addSpacing(16)
+        layout.addSpacing(8)
 
-        # Start / Stop buttons
-        self.btn_start = QPushButton("START\n자동매매")
+        # ── START / STOP / LANG ────────────────────────────────────────────
+        self.btn_start = QPushButton(tr("btn_start"))
         self.btn_start.setObjectName("btn_start")
-        self.btn_start.setFixedSize(90, 44)
+        self.btn_start.setFixedSize(88, 46)
         self.btn_start.clicked.connect(self._start_trading)
         layout.addWidget(self.btn_start)
 
-        self.btn_stop = QPushButton("STOP\n자동매매")
+        self.btn_stop = QPushButton(tr("btn_stop"))
         self.btn_stop.setObjectName("btn_stop")
-        self.btn_stop.setFixedSize(90, 44)
+        self.btn_stop.setFixedSize(88, 46)
         self.btn_stop.clicked.connect(self._stop_trading)
         layout.addWidget(self.btn_stop)
+
+        self.btn_lang = QPushButton("🌐 EN")
+        self.btn_lang.setFixedSize(54, 46)
+        self.btn_lang.setToolTip("Switch language / 언어 전환")
+        self.btn_lang.setStyleSheet(
+            "QPushButton{background:#1a1a2e;border:1px solid #3a3a6a;"
+            "color:#a0a0d0;font-size:11px;border-radius:4px;}"
+            "QPushButton:hover{background:#2a2a5a;}")
+        self.btn_lang.clicked.connect(self._toggle_language)
+        layout.addWidget(self.btn_lang)
 
         return w
 
@@ -2400,7 +2594,7 @@ class MainWindow(QMainWindow):
         tb_layout = QHBoxLayout(tab_bar)
         tb_layout.setContentsMargins(4, 2, 4, 2)
         tb_layout.setSpacing(4)
-        lbl = QLabel(self._current_stock_name or "종목선택")
+        lbl = QLabel(self._current_stock_name or tr("select_stock"))
         lbl.setStyleSheet("color: #a0a0cc; font-weight: bold;")
         self._chart_name_lbl = lbl
         tb_layout.addWidget(lbl)
@@ -2415,7 +2609,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._chart_view, stretch=1)
 
         # Volume bar placeholder
-        self._vol_note = QLabel("* 차트 데이터는 실제와 다를 수 있습니다.")
+        self._vol_note = QLabel(tr("chart_note"))
         self._vol_note.setStyleSheet("color: #555566; font-size: 10px;")
         self._vol_note.setAlignment(Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self._vol_note)
@@ -2427,7 +2621,7 @@ class MainWindow(QMainWindow):
         w.setFixedHeight(60)
         layout = QHBoxLayout(w)
         layout.setContentsMargins(4, 0, 4, 0)
-        lbl = QLabel("실시간 틱")
+        lbl = QLabel(tr("realtime_tick"))
         lbl.setStyleSheet("color: #666688; font-size: 10px;")
         lbl.setFixedWidth(48)
         layout.addWidget(lbl)
@@ -2441,12 +2635,13 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
-        hdr = QLabel("TRADE HISTORY (오늘)")
+        hdr = QLabel(tr("trade_history"))
         hdr.setStyleSheet("color: #8888aa; font-size: 11px; padding: 4px 6px;")
         layout.addWidget(hdr)
 
         self._trade_table = QTableWidget()
-        cols = ["시간", "구분", "가격(KRW)", "수량", "사유", "변화(틱)", "고가(KRW)", "P/L(KRW)"]
+        cols = [tr("col_time"), tr("col_type"), tr("col_price"), tr("col_qty"),
+                tr("col_reason"), tr("col_ticks"), tr("col_high"), tr("col_pnl")]
         self._trade_table.setColumnCount(len(cols))
         self._trade_table.setHorizontalHeaderLabels(cols)
         self._trade_table.horizontalHeader().setSectionResizeMode(
@@ -2457,7 +2652,8 @@ class MainWindow(QMainWindow):
         self._trade_table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers)
         self._trade_table.verticalHeader().setVisible(False)
-        self._trade_table.setMaximumHeight(180)
+        self._trade_table.setMinimumHeight(100)
+        # No fixed max — let the splitter/stretch allocate space naturally
         layout.addWidget(self._trade_table)
 
         return w
@@ -2470,23 +2666,23 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(8, 2, 8, 2)
         layout.setSpacing(16)
 
-        self._conn_dot = QLabel("● CONNECTED")
-        self._conn_dot.setStyleSheet("color: #44cc44;")
+        self._conn_dot = QLabel(tr("not_connected"))
+        self._conn_dot.setStyleSheet("color: #cc4444;")
         layout.addWidget(self._conn_dot)
 
-        self._order_status_lbl = QLabel("주문상태: 정상")
+        self._order_status_lbl = QLabel(tr("order_status_ok"))
         self._order_status_lbl.setStyleSheet("color: #44cc44;")
         layout.addWidget(self._order_status_lbl)
 
-        self._position_lbl = QLabel("포지션: 0주")
+        self._position_lbl = QLabel(tr("position_lbl"))
         self._position_lbl.setStyleSheet("color: #c0c0d8;")
         layout.addWidget(self._position_lbl)
 
-        self._avg_price_lbl = QLabel("평균가: --")
+        self._avg_price_lbl = QLabel(tr("avg_price_lbl"))
         self._avg_price_lbl.setStyleSheet("color: #c0c0d8;")
         layout.addWidget(self._avg_price_lbl)
 
-        self._cur_price_lbl = QLabel("현재가: --")
+        self._cur_price_lbl = QLabel(tr("cur_price_lbl"))
         self._cur_price_lbl.setStyleSheet("color: #c0c0d8;")
         layout.addWidget(self._cur_price_lbl)
 
@@ -2499,8 +2695,25 @@ class MainWindow(QMainWindow):
         return w
 
     def _build_right_panel(self) -> QWidget:
+        # Outer container — fixed width, full height
+        outer = QWidget()
+        outer.setStyleSheet("background: #0a0a18; border-left: 1px solid #2a2a4a;")
+        outer_layout = QVBoxLayout(outer)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        # Scrollable inner area so content never overflows on small screens
+        from PySide6.QtWidgets import QScrollArea
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet(
+            "QScrollArea{border:none; background:#0a0a18;}"
+            "QScrollBar:vertical{background:#1a1a2e; width:6px;}"
+            "QScrollBar::handle:vertical{background:#3a3a6a; border-radius:3px;}")
+
         w = QWidget()
-        w.setStyleSheet("background: #0a0a18; border-left: 1px solid #2a2a4a;")
+        w.setStyleSheet("background: #0a0a18;")
         layout = QVBoxLayout(w)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
@@ -2522,9 +2735,9 @@ class MainWindow(QMainWindow):
             l.setAlignment(Qt.AlignmentFlag.AlignCenter)
             return l
 
-        perf_layout.addWidget(info_hdr("미실현손익"), 0, 0)
-        perf_layout.addWidget(info_hdr("실현손익"), 0, 1)
-        perf_layout.addWidget(info_hdr("총손익(오늘)"), 0, 2)
+        perf_layout.addWidget(info_hdr(tr("unrealized_pnl")), 0, 0)
+        perf_layout.addWidget(info_hdr(tr("realized_pnl")), 0, 1)
+        perf_layout.addWidget(info_hdr(tr("total_pnl")), 0, 2)
         self._unreal_lbl = pnl_lbl("+0 KRW")
         self._real_lbl = pnl_lbl("+0 KRW")
         self._total_lbl = pnl_lbl("+0 KRW")
@@ -2532,9 +2745,9 @@ class MainWindow(QMainWindow):
         perf_layout.addWidget(self._real_lbl, 1, 1)
         perf_layout.addWidget(self._total_lbl, 1, 2)
 
-        perf_layout.addWidget(info_hdr("총거래"), 2, 0)
-        perf_layout.addWidget(info_hdr("익/손"), 2, 1)
-        perf_layout.addWidget(info_hdr("승률"), 2, 2)
+        perf_layout.addWidget(info_hdr(tr("total_trades")), 2, 0)
+        perf_layout.addWidget(info_hdr(tr("win_loss")), 2, 1)
+        perf_layout.addWidget(info_hdr(tr("win_rate")), 2, 2)
         self._trades_lbl = QLabel("0")
         self._trades_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._trades_lbl.setStyleSheet("color: #d0d0f0; font-size: 16px; font-weight:bold;")
@@ -2552,7 +2765,7 @@ class MainWindow(QMainWindow):
         # Current status
         status_box = QGroupBox("CURRENT STATUS")
         status_layout = QVBoxLayout(status_box)
-        self._status_lbl = QLabel("대기 중")
+        self._status_lbl = QLabel(tr("idle_status"))
         self._status_lbl.setObjectName("status_label")
         self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._status_lbl.setWordWrap(True)
@@ -2578,36 +2791,47 @@ class MainWindow(QMainWindow):
                 "background:#1a5c1a; color:white; border-radius:3px; "
                 "padding: 2px; font-weight:bold; font-size:10px;")
             cfg_lbl = QLabel("Configured")
-            cfg_lbl.setStyleSheet("color: #888888;")
+            cfg_lbl.setStyleSheet("color: #888888; font-size:10px;")
             sell_grid.addWidget(lbl, row, 0)
             sell_grid.addWidget(on_btn, row, 1)
             sell_grid.addWidget(cfg_lbl, row, 2)
             return on_btn
 
-        self._bs_on_lbl = status_row(1, "기본 손절")
-        self._ts_on_lbl = status_row(2, "추격 익절 (상승 후)")
-        self._ss_on_lbl = status_row(3, "정체 매도")
+        self._bs_on_lbl = status_row(1, tr("basic_stop_lbl"))
+        self._ts_on_lbl = status_row(2, tr("trailing_lbl"))
+        self._ss_on_lbl = status_row(3, tr("stagnation_sell_lbl"))
         layout.addWidget(sell_box)
 
         # Order type
         order_box = QGroupBox("ORDER TYPE")
         order_layout = QVBoxLayout(order_box)
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(4)
+
+        _active_style = ("background-color:#1a3a8c; border:2px solid #3a5acc;"
+                         "color:white; font-weight:bold; border-radius:4px;")
+        _inactive_style = ("background-color:#1e1e3a; border:1px solid #3a3a6a;"
+                           "color:#a0a0c0; border-radius:4px;")
+
         self.btn_market = QPushButton("MARKET ORDER")
-        self.btn_market.setObjectName("btn_market_active")
         self.btn_market.setCheckable(True)
-        self.btn_market.setChecked(self.config.get("order_type") == "MARKET")
+        is_market = self.config.get("order_type", "MARKET") == "MARKET"
+        self.btn_market.setChecked(is_market)
+        self.btn_market.setStyleSheet(_active_style if is_market else _inactive_style)
         self.btn_market.clicked.connect(lambda: self._set_order_type("MARKET"))
+
         self.btn_limit = QPushButton("LIMIT ORDER")
         self.btn_limit.setCheckable(True)
-        self.btn_limit.setChecked(self.config.get("order_type") == "LIMIT")
+        self.btn_limit.setChecked(not is_market)
+        self.btn_limit.setStyleSheet(_inactive_style if is_market else _active_style)
         self.btn_limit.clicked.connect(lambda: self._set_order_type("LIMIT"))
+
         btn_row.addWidget(self.btn_market)
         btn_row.addWidget(self.btn_limit)
         order_layout.addLayout(btn_row)
 
         qty_row = QHBoxLayout()
-        qty_row.addWidget(QLabel("주문 수량"))
+        qty_row.addWidget(QLabel(tr("order_qty_lbl")))
         self.btn_qty_minus = QPushButton("−")
         self.btn_qty_minus.setFixedWidth(28)
         self.btn_qty_minus.clicked.connect(self._dec_qty)
@@ -2620,10 +2844,10 @@ class MainWindow(QMainWindow):
         self.btn_qty_plus.clicked.connect(self._inc_qty)
         qty_row.addWidget(self.btn_qty_minus)
         qty_row.addWidget(self._qty_lbl)
-        qty_row.addWidget(QLabel("주"))
+        qty_row.addWidget(QLabel(tr("shares_unit")))
         qty_row.addWidget(self.btn_qty_plus)
         qty_row.addStretch()
-        avail_lbl = QLabel("가용: 100주")
+        avail_lbl = QLabel(tr("avail_lbl"))
         avail_lbl.setStyleSheet("color: #666688;")
         self._avail_lbl = avail_lbl
         qty_row.addWidget(avail_lbl)
@@ -2631,7 +2855,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(order_box)
 
         # Position info
-        pos_box = QGroupBox("현재 포지션")
+        pos_box = QGroupBox(tr("pos_box"))
         pos_grid = QGridLayout(pos_box)
 
         def pos_row(r, lbl_text, val_text="--"):
@@ -2642,44 +2866,105 @@ class MainWindow(QMainWindow):
             pos_grid.addWidget(lbl, r, 1)
             return lbl
 
-        self._pos_qty_lbl = pos_row(0, "보유 수량", "0주")
-        self._pos_avg_lbl = pos_row(1, "평균 매수가", "--")
-        self._pos_high_lbl = pos_row(2, "매수 후 최고가", "--")
-        self._pos_trigger_lbl = pos_row(3, "현재 매도 기준", "--")
+        self._pos_qty_lbl     = pos_row(0, tr("pos_qty"),     "0")
+        self._pos_avg_lbl     = pos_row(1, tr("pos_avg"),     "--")
+        self._pos_high_lbl    = pos_row(2, tr("pos_high"),    "--")
+        self._pos_trigger_lbl = pos_row(3, tr("pos_trigger"), "--")
         layout.addWidget(pos_box)
 
-        # Emergency stop
-        self.btn_emergency = QPushButton("⛔ EMERGENCY STOP\n(전체 주문 취소)")
+        # Emergency stop — constrained height, full width
+        self.btn_emergency = QPushButton(tr("emergency_btn"))
         self.btn_emergency.setObjectName("btn_emergency")
-        self.btn_emergency.setMinimumHeight(56)
+        self.btn_emergency.setFixedHeight(52)
+        self.btn_emergency.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.btn_emergency.clicked.connect(self._emergency_stop)
         layout.addWidget(self.btn_emergency)
 
-        # Log
+        # Log — flexible height
         log_box = QGroupBox("Log")
         log_layout = QVBoxLayout(log_box)
+        log_layout.setContentsMargins(4, 4, 4, 4)
         self._log_view = QTextEdit()
         self._log_view.setReadOnly(True)
-        self._log_view.setMaximumHeight(100)
+        self._log_view.setMinimumHeight(80)
+        self._log_view.setMaximumHeight(160)
         log_layout.addWidget(self._log_view)
         layout.addWidget(log_box)
 
-        # Bottom buttons
-        bottom_row = QHBoxLayout()
+        # Bottom buttons — 2×2 grid to avoid cramping
+        from PySide6.QtWidgets import QGridLayout as _QGL
+        btn_grid = _QGL()
+        btn_grid.setSpacing(4)
         btn_settings2 = QPushButton("⚙ Settings")
         btn_settings2.clicked.connect(self._open_settings)
         btn_log = QPushButton("📋 Log")
         btn_log.clicked.connect(self._open_log)
-        btn_export = QPushButton("💾 거래내역 저장")
+        btn_export = QPushButton(tr("btn_export"))
         btn_export.clicked.connect(self._export_trades)
-        btn_exit = QPushButton("❌ 종료")
+        btn_exit = QPushButton(tr("btn_exit"))
         btn_exit.clicked.connect(self.close)
-        for b in [btn_settings2, btn_log, btn_export, btn_exit]:
-            bottom_row.addWidget(b)
-        layout.addLayout(bottom_row)
+        btn_grid.addWidget(btn_settings2, 0, 0)
+        btn_grid.addWidget(btn_log,       0, 1)
+        btn_grid.addWidget(btn_export,    1, 0)
+        btn_grid.addWidget(btn_exit,      1, 1)
+        layout.addLayout(btn_grid)
 
         layout.addStretch()
-        return w
+
+        # Wire scroll area
+        scroll.setWidget(w)
+        outer_layout.addWidget(scroll)
+        return outer
+
+    # ── LANGUAGE TOGGLE ───────────────────────────────────────────────────────
+
+    def _toggle_language(self):
+        global _LANG
+        _LANG = "en" if _LANG == "ko" else "ko"
+        self.btn_lang.setText("🌐 KO" if _LANG == "en" else "🌐 EN")
+        self._apply_language()
+
+    def _apply_language(self):
+        """Refresh all translatable labels without rebuilding the whole UI."""
+        # Top bar
+        self._stock_name_lbl.setText(
+            self._current_stock_name or tr("select_stock"))
+        self._vol_lbl.setText(
+            f"{'Volume' if _LANG == 'en' else '거래량'}: "
+            f"{self._current_price:,}" if self._current_price else tr("volume_lbl"))
+        self.btn_start.setText(tr("btn_start"))
+        self.btn_stop.setText(tr("btn_stop"))
+        # Status bar labels
+        self._status_order.setText(tr("order_status_ok"))
+        if not self._ws_connected:
+            self._status_ws.setText(tr("ws_disconnected"))
+            self._conn_dot.setText(tr("not_connected"))
+        else:
+            self._status_ws.setText(tr("ws_connected_lbl"))
+            self._conn_dot.setText(tr("ws_connected_lbl"))
+        if not self._api_connected:
+            self._status_conn.setText(tr("not_connected"))
+        else:
+            self._status_conn.setText(tr("kis_connected_lbl"))
+        # Bottom strip
+        self._order_status_lbl.setText(tr("order_status_ok"))
+        self._position_lbl.setText(tr("position_lbl"))
+        self._avg_price_lbl.setText(tr("avg_price_lbl"))
+        self._cur_price_lbl.setText(tr("cur_price_lbl"))
+        # Chart area
+        self._vol_note.setText(tr("chart_note"))
+        # Trade history header
+        cols = [tr("col_time"), tr("col_type"), tr("col_price"), tr("col_qty"),
+                tr("col_reason"), tr("col_ticks"), tr("col_high"), tr("col_pnl")]
+        for i, c in enumerate(cols):
+            self._trade_table.horizontalHeaderItem(i).setText(c)
+        # Right panel
+        self._status_lbl.setText(
+            self._status_lbl.text())  # status text is dynamic; leave as-is
+        self.btn_emergency.setText(tr("emergency_btn"))
+        # Pos box labels are dynamic; pos_box title
+        # (GroupBox titles require finding the widget – update on next rebuild)
 
     # ── SIGNAL CONNECTIONS ────────────────────────────────────────────────────
 
@@ -2696,37 +2981,40 @@ class MainWindow(QMainWindow):
     # ── SLOTS ─────────────────────────────────────────────────────────────────
 
     @Slot(str, int, int)
+    @Slot(str, int, int)
     def _on_tick(self, symbol: str, price: int, volume: int):
+        prev_price = self._current_price          # capture BEFORE updating
         self._current_price = price
         self._tick_tape.add_tick(price, volume)
         self.engine.on_tick(symbol, price, volume)
 
-        color = "#e74c3c" if price >= (self._current_price or price) else "#3498db"
+        color = "#e74c3c" if price >= (prev_price or price) else "#3498db"
         self._price_lbl.setText(f"{price:,}")
         self._price_lbl.setStyleSheet(
             f"color: {color}; font-size: 24px; font-weight: bold;")
-        self._cur_price_lbl.setText(f"현재가: {price:,}")
+        self._cur_price_lbl.setText(tr("cur_price_fmt", p=price))
 
     @Slot(bool, str)
     def _on_ws_connection(self, connected: bool, reason: str):
         self._ws_connected = connected
         if connected:
-            self._status_ws.setText("● WebSocket 연결됨")
+            self._status_ws.setText(tr("ws_connected_lbl"))
             self._status_ws.setStyleSheet("color: #44cc44;")
-            self._conn_dot.setText("● CONNECTED")
+            self._conn_dot.setText(tr("ws_connected_lbl"))
             self._conn_dot.setStyleSheet("color: #44cc44;")
         else:
             self._status_ws.setText(f"● WS: {reason}")
             self._status_ws.setStyleSheet("color: #cc4444;")
-            self._conn_dot.setText("● 연결 끊김")
+            self._conn_dot.setText(tr("not_connected"))
             self._conn_dot.setStyleSheet("color: #cc4444;")
-        self._log(f"WebSocket {'연결' if connected else '끊김'}: {reason}")
+        ws_state = tr("log_ws_connected") if connected else tr("log_ws_disconnected")
+        self._log(f"WebSocket {ws_state}: {reason}")
 
     @Slot(str, str)
     def _on_status_changed(self, sig_state: str, ord_state: str):
         status_text = f"{sig_state}\n({ord_state})"
         self._status_lbl.setText(status_text)
-        self._order_status_lbl.setText(f"주문: {ord_state}")
+        self._order_status_lbl.setText(tr("order_lbl") + ord_state)
 
     @Slot(dict)
     def _on_position_updated(self, info: dict):
@@ -2736,13 +3024,13 @@ class MainWindow(QMainWindow):
         trigger = info.get("sell_trigger", "--")
         pnl = info.get("unrealized_pnl", 0)
 
-        self._pos_qty_lbl.setText(f"{qty}주")
-        self._pos_avg_lbl.setText(f"{avg:,}원" if avg else "--")
-        self._pos_high_lbl.setText(f"{high:,}원" if high else "--")
+        self._pos_qty_lbl.setText(tr("pos_qty_fmt", q=qty))
+        self._pos_avg_lbl.setText(tr("pos_avg_fmt", p=avg) if avg else "--")
+        self._pos_high_lbl.setText(tr("pos_avg_fmt", p=high) if high else "--")
         self._pos_trigger_lbl.setText(trigger)
 
-        self._position_lbl.setText(f"포지션: {qty}주")
-        self._avg_price_lbl.setText(f"평균가: {avg:,}" if avg else "평균가: --")
+        self._position_lbl.setText(tr("position_fmt", q=qty))
+        self._avg_price_lbl.setText(tr("avg_fmt", p=avg) if avg else tr("avg_none"))
 
         color = "#ff4444" if pnl >= 0 else "#4488ff"
         self._unrealized_inline.setText(f"{pnl:+,} KRW")
@@ -2799,7 +3087,7 @@ class MainWindow(QMainWindow):
 
         self._trade_table.setItem(0, 0, cell(trade.get("time", "")))
         self._trade_table.setItem(0, 1, cell(
-            "▲ 매수" if is_buy else "▼ 매도", type_color))
+            tr("trade_buy") if is_buy else tr("trade_sell"), type_color))
         self._trade_table.setItem(0, 2, cell(f"{trade.get('price',0):,}"))
         self._trade_table.setItem(0, 3, cell(str(trade.get("qty", ""))))
         self._trade_table.setItem(0, 4, cell(trade.get("reason", "")))
@@ -2816,7 +3104,7 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def _on_error(self, msg: str):
-        self._log(f"⚠ 오류: {msg}")
+        self._log(tr("log_error_prefix") + msg)
 
     # ── ACTIONS ───────────────────────────────────────────────────────────────
 
@@ -2826,14 +3114,13 @@ class MainWindow(QMainWindow):
             return
 
         if not self.config.get("app_key"):
-            QMessageBox.warning(self, "경고", "먼저 설정에서 API 정보를 입력하세요.")
+            QMessageBox.warning(self, tr("warning"), tr("enter_api_first"))
             return
 
-        # Get token if needed
         if not self.api._token:
             ok = self.api.get_token()
             if not ok:
-                self._log("❌ API 인증 실패")
+                self._log(tr("log_auth_fail"))
                 return
 
         info = self.api.get_stock_info(symbol)
@@ -2851,36 +3138,38 @@ class MainWindow(QMainWindow):
             self._price_change_lbl.setText(
                 f"{sign} {abs(change):,} ({rate:+.2f}%)")
             self._price_change_lbl.setStyleSheet(f"color: {color};")
-            self._vol_lbl.setText(f"거래량: {info.get('volume',0):,}")
+            self._vol_lbl.setText(f"Volume: {info.get('volume',0):,}")
 
             # Start WS for this symbol
             self.ws.stop()
             self.engine.set_symbol(symbol)
             self.ws.start(symbol)
-            self._log(f"종목 선택: {self._current_stock_name} ({symbol}) @ {info['price']:,}원")
+            self._log(tr("log_stock_selected",
+                         name=self._current_stock_name, sym=symbol,
+                         price=info['price']))
             self._api_connected = True
-            self._status_conn.setText("● KIS 연결됨")
+            self._status_conn.setText(tr("kis_connected_lbl"))
             self._status_conn.setStyleSheet("color: #44cc44;")
         else:
-            self._log(f"❌ 종목 조회 실패: {symbol}")
-            QMessageBox.warning(self, "오류", f"종목을 찾을 수 없습니다: {symbol}")
+            self._log(tr("log_stock_fail") + symbol)
+            QMessageBox.warning(self, tr("error_title"),
+                                tr("stock_not_found") + symbol)
 
     def _start_trading(self):
         if not self._current_symbol:
-            QMessageBox.warning(self, "경고", "종목을 먼저 선택하세요.")
+            QMessageBox.warning(self, tr("warning"), tr("select_stock_warn"))
             return
         if not self.config.get("app_key"):
-            QMessageBox.warning(self, "경고", "설정에서 API 정보를 입력하세요.")
+            QMessageBox.warning(self, tr("warning"), tr("enter_api_warn"))
             return
 
-        # Sync time settings from inline fields
         self.config.set("start_time", self._start_time_edit.text().strip())
         self.config.set("end_time", self._end_time_edit.text().strip())
 
-        mode = "모의투자" if self.config.get("is_paper") else "실거래"
+        mode = tr("paper_mode") if self.config.get("is_paper") else tr("live_mode")
         reply = QMessageBox.question(
-            self, "자동매매 시작",
-            f"자동매매를 시작하시겠습니까?\n환경: {mode}\n종목: {self._current_stock_name}",
+            self, tr("start_confirm_title"),
+            tr("start_confirm_msg", mode=mode, stock=self._current_stock_name),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
@@ -2890,12 +3179,11 @@ class MainWindow(QMainWindow):
         self.engine.start_trading()
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
-        self._log(f"✅ 자동매매 시작 [{mode}]")
+        self._log(tr("log_start", mode=mode))
 
     def _stop_trading(self):
         reply = QMessageBox.question(
-            self, "자동매매 중지",
-            "자동매매를 중지하시겠습니까?",
+            self, tr("stop_confirm_title"), tr("stop_confirm_msg"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:
@@ -2903,12 +3191,11 @@ class MainWindow(QMainWindow):
         self._trading_active = False
         self.engine.stop_trading()
         self.btn_start.setEnabled(True)
-        self._log("⏹ 자동매매 중지")
+        self._log(tr("log_stop"))
 
     def _emergency_stop(self):
         reply = QMessageBox.question(
-            self, "⛔ 긴급 정지",
-            "긴급 정지를 실행하시겠습니까?\n\n모든 주문이 취소됩니다.",
+            self, tr("emergency_title"), tr("emergency_msg"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
@@ -2916,8 +3203,7 @@ class MainWindow(QMainWindow):
             return
 
         liquidate_reply = QMessageBox.question(
-            self, "포지션 처리",
-            "현재 보유 포지션을 청산하시겠습니까?",
+            self, tr("liquidate_title"), tr("liquidate_msg"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         liquidate = liquidate_reply == QMessageBox.StandardButton.Yes
@@ -2925,7 +3211,8 @@ class MainWindow(QMainWindow):
         self._trading_active = False
         self.engine.emergency_stop(liquidate=liquidate)
         self.btn_start.setEnabled(True)
-        self._log(f"⛔ 긴급 정지 실행 (청산={'예' if liquidate else '아니오'})")
+        yes_no = tr("yes") if liquidate else tr("no")
+        self._log(tr("log_emergency", v=yes_no))
 
     def _set_order_type(self, order_type: str):
         self.config.set("order_type", order_type)
@@ -2933,11 +3220,12 @@ class MainWindow(QMainWindow):
         is_market = order_type == "MARKET"
         self.btn_market.setChecked(is_market)
         self.btn_limit.setChecked(not is_market)
-        active_style = ("background-color: #1a3a8c; border: 2px solid #3a5acc; "
-                        "color: white; font-weight: bold;")
-        inactive_style = ""
-        self.btn_market.setStyleSheet(active_style if is_market else inactive_style)
-        self.btn_limit.setStyleSheet(active_style if not is_market else inactive_style)
+        active   = ("background-color:#1a3a8c; border:2px solid #3a5acc;"
+                    "color:white; font-weight:bold; border-radius:4px;")
+        inactive = ("background-color:#1e1e3a; border:1px solid #3a3a6a;"
+                    "color:#a0a0c0; border-radius:4px;")
+        self.btn_market.setStyleSheet(active   if is_market else inactive)
+        self.btn_limit.setStyleSheet (inactive if is_market else active)
 
     def _inc_qty(self):
         qty = self.config.get("order_qty", 10) + 1
@@ -2952,16 +3240,15 @@ class MainWindow(QMainWindow):
     def _open_settings(self):
         dlg = SettingsDialog(self.config, self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            self._log("설정 저장됨")
-            # Reload API client with new config
+            self._log(tr("log_settings_saved"))
             is_live = not self.config.get("is_paper", True)
-            mode = "실거래 (LIVE)" if is_live else "모의투자 (Paper)"
-            self.setWindowTitle(f"{APP_TITLE}  {'🔴 LIVE' if is_live else '📄 PAPER'}")
+            mode_str = "🔴 LIVE" if is_live else "📄 PAPER"
+            self.setWindowTitle(f"{APP_TITLE}  {mode_str}")
             self._qty_lbl.setText(str(self.config.get("order_qty", 10)))
 
     def _open_log(self):
         dlg = QDialog(self)
-        dlg.setWindowTitle("시스템 로그")
+        dlg.setWindowTitle(tr("log_title"))
         dlg.setMinimumSize(700, 400)
         dlg.setStyleSheet(DARK_STYLE)
         layout = QVBoxLayout(dlg)
@@ -2971,20 +3258,22 @@ class MainWindow(QMainWindow):
         try:
             with open(LOG_PATH, "r", encoding="utf-8") as f:
                 content = f.read()
-            te.setPlainText(content[-20000:])  # last 20KB
-            te.moveCursor(te.textCursor().End)
+            te.setPlainText(content[-20000:])
+            from PySide6.QtGui import QTextCursor
+            te.moveCursor(QTextCursor.MoveOperation.End)
         except Exception:
-            te.setPlainText("로그 파일 없음")
+            te.setPlainText(tr("log_no_file"))
         layout.addWidget(te)
         dlg.exec()
 
     def _export_trades(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "거래내역 저장", "trades.csv", "CSV (*.csv)")
+            self, tr("export_title"), "trades.csv", "CSV (*.csv)")
         if path:
             self.db.export_trades_csv(path)
-            QMessageBox.information(self, "완료", f"저장 완료:\n{path}")
-            self._log(f"거래내역 저장: {path}")
+            QMessageBox.information(self, tr("export_done_title"),
+                                    tr("export_done_msg") + path)
+            self._log(tr("log_export") + path)
 
     # ── TIMER SLOTS ───────────────────────────────────────────────────────────
 
@@ -3017,7 +3306,7 @@ class MainWindow(QMainWindow):
             pass
         else:
             if self._trading_active:
-                self._log("⚠ 연결 상태 이상 감지 - 자동매매 일시 중단")
+                self._log(tr("log_conn_warn"))
 
     # ── LOGGING ───────────────────────────────────────────────────────────────
 
@@ -3035,7 +3324,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         reply = QMessageBox.question(
-            self, "종료", "프로그램을 종료하시겠습니까?",
+            self, tr("exit_title"), tr("exit_msg"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply != QMessageBox.StandardButton.Yes:

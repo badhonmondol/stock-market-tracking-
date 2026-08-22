@@ -1,0 +1,50 @@
+2026-08-22 15:01:03,821 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 15:01:45,164 [INFO] ⚠ 긴급 정지 실행
+2026-08-22 15:01:45,171 [INFO] ⛔ 긴급 정지 실행 (청산=예)
+2026-08-22 15:01:52,671 [INFO] ⚠ 긴급 정지 실행
+2026-08-22 15:01:52,679 [INFO] ⛔ 긴급 정지 실행 (청산=예)
+2026-08-22 15:01:57,457 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 15:01:58,158 [ERROR] Balance error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-balance?CANO=&ACNT_PRDT_CD=01&AFHR_FLPR_YN=N&OFL_YN=N&INQR_DVSN=01&UNPR_DVSN=01&FUND_STTL_ICLD_YN=N&FNCG_AMT_AUTO_RDPT_YN=N&PRCS_DVSN=01&CTX_AREA_FK100=&CTX_AREA_NK100=
+2026-08-22 15:01:58,874 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 15:01:59,615 [ERROR] Outstanding orders error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-rvsecncl?CANO=&ACNT_PRDT_CD=01&CTX_AREA_FK100=&CTX_AREA_NK100=&INQR_DVSN_1=0&INQR_DVSN_2=0
+2026-08-22 15:01:59,625 [INFO] 자동매매 중지
+2026-08-22 15:01:59,625 [INFO] ⏹ 자동매매 중지
+2026-08-22 15:02:01,829 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 15:02:02,549 [ERROR] Balance error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-balance?CANO=&ACNT_PRDT_CD=01&AFHR_FLPR_YN=N&OFL_YN=N&INQR_DVSN=01&UNPR_DVSN=01&FUND_STTL_ICLD_YN=N&FNCG_AMT_AUTO_RDPT_YN=N&PRCS_DVSN=01&CTX_AREA_FK100=&CTX_AREA_NK100=
+2026-08-22 15:02:03,302 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 15:02:04,072 [ERROR] Outstanding orders error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-rvsecncl?CANO=&ACNT_PRDT_CD=01&CTX_AREA_FK100=&CTX_AREA_NK100=&INQR_DVSN_1=0&INQR_DVSN_2=0
+2026-08-22 15:02:04,084 [INFO] 자동매매 중지
+2026-08-22 15:02:04,084 [INFO] ⏹ 자동매매 중지
+2026-08-22 15:04:19,153 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 15:14:01,160 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 15:16:37,186 [INFO] 자동매매 중지
+2026-08-22 15:16:37,186 [INFO] Application closed
+2026-08-22 15:17:09,227 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 15:17:31,400 [INFO] 자동매매 중지
+2026-08-22 15:17:31,408 [INFO] Application closed
+2026-08-22 17:25:11,829 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 17:25:36,993 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 17:27:47,130 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 17:33:56,705 [INFO] Auto-trading stopped
+2026-08-22 17:33:56,705 [INFO] Application closed
+2026-08-22 17:38:14,111 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 17:46:00,508 [INFO] Auto-trading stopped
+2026-08-22 17:46:00,508 [INFO] Application closed
+2026-08-22 17:46:24,889 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:47:24,420 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:47:40,055 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:57:13,869 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:57:57,523 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:58:31,786 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 19:59:00,023 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 20:00:29,121 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 20:00:37,978 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 20:01:57,857 [INFO] 시스템 초기화 완료. 설정에서 API 정보를 입력하세요.
+2026-08-22 20:03:36,575 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 20:03:37,261 [ERROR] Balance error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-balance?CANO=&ACNT_PRDT_CD=01&AFHR_FLPR_YN=N&OFL_YN=N&INQR_DVSN=01&UNPR_DVSN=01&FUND_STTL_ICLD_YN=N&FNCG_AMT_AUTO_RDPT_YN=N&PRCS_DVSN=01&CTX_AREA_FK100=&CTX_AREA_NK100=
+2026-08-22 20:03:37,995 [ERROR] Token error: 403 Client Error: Forbidden for url: https://openapivts.koreainvestment.com:29443/oauth2/tokenP
+2026-08-22 20:03:38,710 [ERROR] Outstanding orders error: 500 Server Error: Internal Server Error for url: https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/trading/inquire-psbl-rvsecncl?CANO=&ACNT_PRDT_CD=01&CTX_AREA_FK100=&CTX_AREA_NK100=&INQR_DVSN_1=0&INQR_DVSN_2=0
+2026-08-22 20:03:38,727 [INFO] Auto-trading stopped
+2026-08-22 20:03:38,727 [INFO] ⏹ Auto-trading stopped
+2026-08-22 20:03:47,290 [INFO] Auto-trading stopped
+2026-08-22 20:03:47,290 [INFO] Application closed

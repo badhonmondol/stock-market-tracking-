@@ -1,0 +1,56 @@
+{
+  "is_paper": true,
+  "app_key": "",
+  "app_secret": "",
+  "account_no": "",
+  "account_suffix": "01",
+  "order_qty": 17,
+  "order_type": "MARKET",
+  "start_time": "09:00:00",
+  "end_time": "15:30:00",
+  "block_buy_first_minutes": 0,
+  "block_buy_before_close_minutes": 0,
+  "end_time_action": "stop_buy",
+  "ma20_enabled": true,
+  "ma20_proximity_ticks": 3,
+  "ma20_recovery_ticks": 2,
+  "rapid_rise_enabled": true,
+  "rapid_rise_ticks": 5,
+  "rapid_rise_seconds": 5,
+  "rapid_rise_min_consecutive": 3,
+  "rebound_enabled": true,
+  "rebound_drop_ticks": 10,
+  "rebound_up_ticks": 4,
+  "rebound_seconds": 5,
+  "sideways_range_ticks": 3,
+  "sideways_window_seconds": 30,
+  "stagnation_buy_seconds": 2,
+  "stagnation_reentry_seconds": 60,
+  "basic_sell_enabled": true,
+  "basic_sell_ticks": -2,
+  "trailing_ranges": [
+    {
+      "min_ticks": 1,
+      "max_ticks": 4,
+      "pullback_ticks": 3
+    },
+    {
+      "min_ticks": 5,
+      "max_ticks": 9,
+      "pullback_ticks": 4
+    },
+    {
+      "min_ticks": 10,
+      "max_ticks": 14,
+      "pullback_ticks": 5
+    }
+  ],
+  "stagnation_sell_enabled": true,
+  "stagnation_sell_seconds": 2,
+  "limit_offset_ticks": 0,
+  "limit_timeout_seconds": 10,
+  "max_daily_loss": 500000,
+  "max_trades_per_day": 50,
+  "session_loss_limit": 300000,
+  "reentry_wait_seconds": 3
+}
